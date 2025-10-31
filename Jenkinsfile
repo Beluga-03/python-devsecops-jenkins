@@ -42,6 +42,7 @@ pipeline {
                     sh '''
                         . ${VENV_DIR}/bin/activate
                         pip install --upgrade pip
+                        pip install pbr
                         pip install -r requirements.txt
                         echo "Installed packages:"
                         pip list
@@ -62,7 +63,6 @@ pipeline {
             }
             post {
                 always {
-                    // Publish test results
                     junit allowEmptyResults: true, testResults: 'test-results.xml'
                 }
             }
@@ -114,7 +114,7 @@ pipeline {
                 script {
                     sh '''
                         echo "Building Docker image..."
-                        docker-compose build
+                        docker compose build
                         echo "Docker images:"
                         docker images | grep ${IMAGE_NAME} || echo "Image built"
                     '''
@@ -146,15 +146,15 @@ pipeline {
                 echo '========== Deploying application =========='
                 script {
                     // Stop any existing containers
-                    sh 'docker-compose down || true'
+                    sh 'docker compose down || true'
                     
                     // Deploy the application
                     sh '''
                         echo "Starting application with Docker Compose..."
-                        docker-compose up -d
+                        docker compose up -d
                         echo "Waiting for application to be ready..."
                         sleep 10
-                        docker-compose ps
+                        docker compose ps
                     '''
                     
                     // Verify deployment
@@ -183,7 +183,7 @@ pipeline {
             echo '========== Pipeline Failed =========='
             echo 'Check the logs above for errors'
             // Cleanup on failure
-            sh 'docker-compose down || true'
+            sh 'docker compose down || true'
         }
         unstable {
             echo '========== Pipeline Unstable =========='

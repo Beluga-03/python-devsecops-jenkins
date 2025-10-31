@@ -1,6 +1,14 @@
 pipeline {
     agent any
 
+    environment {
+        // Docker image configuration
+        IMAGE_NAME = 'python-devsecops-jenkins_app'
+        IMAGE_TAG = 'latest'
+        // Python virtual environment
+        VENV_DIR = 'venv'
+    }
+
     stages {
         stage('Clone Repository') {
             steps {
@@ -21,15 +29,43 @@ pipeline {
             }
         }
 
-        stage('Static Analysis (Bandit)') {
+
+        stage('Static Code Analysis (Bandit)') {
             steps {
-                sh 'bandit -r . || true'
+                script {
+                    sh '''
+                        . ${VENV_DIR}/bin/activate
+                        echo "Running Bandit security analysis..."
+                        bandit -r . -f json -o bandit-report.json || true
+                        bandit -r . -ll || true
+                        echo "Bandit scan completed"
+                    '''
+                }
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'bandit-report.json', allowEmptyArchive: true
+                }
             }
         }
 
-        stage('Dependency Scan (Safety)') {
+
+        stage('Check Dependency Vulnerabilities (Safety)') {
             steps {
-                sh 'safety check || true'
+                script {
+                    sh '''
+                        . ${VENV_DIR}/bin/activate
+                        echo "Checking for vulnerable dependencies..."
+                        safety check --json > safety-report.json || true
+                        safety check || true
+                        echo "Safety check completed"
+                    '''
+                }
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'safety-report.json', allowEmptyArchive: true
+                }
             }
         }
 

@@ -114,9 +114,9 @@ pipeline {
                 script {
                     sh '''
                         echo "Building Docker image..."
-                        docker compose build
+                        docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
                         echo "Docker images:"
-                        docker images | grep ${IMAGE_NAME} || echo "Image built"
+                        docker images | grep ${IMAGE_NAME}
                     '''
                 }
             }
